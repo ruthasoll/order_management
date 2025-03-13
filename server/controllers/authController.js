@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt')
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const UserModel = require("../models/users");
 
@@ -32,7 +32,10 @@ const loginUser = async (req, res) => {
 
   try {
     const user = await UserModel.findOne({ email });
-    if (!user) return res.status(400).json({ message: "No user found for this email address" });
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: "No user found for this email address" });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
@@ -46,10 +49,12 @@ const loginUser = async (req, res) => {
 
     res.json({ token });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 module.exports = {
-    signupUser,loginUser
-}
+  signupUser,
+  loginUser,
+};
