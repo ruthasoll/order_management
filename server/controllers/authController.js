@@ -1,6 +1,6 @@
 const User = require("../models/users");
 const {comparePassword, hashPassword}=require('../encryption/encrpt')
-
+const jwt =require('jsonwebtoken')
 const test = (req, res) =>{
     res.json('this is for testing')
 }
@@ -32,7 +32,31 @@ const signupUser = async(req,res) =>{
         }
     
     }
+
+    const loginUser = async(req,res)=>{
+        try {
+            const {email,password}=req.body
+            console.log('Email:', email);
+            const user = await User.findOne({email})
+            if(!user){
+                return res.json({
+                    error:'No user found'
+                })
+            }
+            const match = await comparePassword(password,user.password)
+            if(match){
+                res.json({
+                    message:'passwords match'
+                })
+            }else {
+                res.json({
+                    error: 'Invalid password'
+                });
+            }
+        } catch (error) {
+            return res.status(500).json({ error: 'An error occurred during login' });
+        }
+    }
 module.exports = {
-    test,
-    signupUser
+    test,signupUser,loginUser
 }
