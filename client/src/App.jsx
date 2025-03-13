@@ -19,9 +19,6 @@ function App() {
   return (
     <>
       <Router>
-        
-        
-        
         <Toaster position='bottom-right' toastOption={{duration:3000}} />
         <Routes>
         <Route path='/' element={<Home/>}/>
