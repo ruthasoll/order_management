@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const UserModel = require("./models/users");
 const ProductModel = require("./models/products");
 const OrderModel = require("./models/order");
+const bcrypt = require("bcryptjs");
 
 dotenv.config();
 
@@ -10,13 +11,13 @@ const seedUsers = [
   {
     name: "Admin User",
     email: "admin@example.com",
-    password: "adminpassword", // This should be hashed in a real scenario
+    password: bcrypt.hashSync("adminpassword", 10), // Password is hashed
     role: "admin",
   },
   {
     name: "Regular User",
     email: "user@example.com",
-    password: "userpassword", // This should be hashed in a real scenario
+    password: bcrypt.hashSync("userpassword", 10), // Password is hashed
     role: "user",
   },
 ];
@@ -56,7 +57,10 @@ const seedDatabase = async () => {
   try {
     await mongoose.connect(process.env.mongodb_url);
     console.log("MongoDB Connected");
-
+    await OrderModel.collection.drop();
+    await ProductModel.collection.drop();
+    await UserModel.collection.drop();
+    //
     await UserModel.deleteMany({});
     await ProductModel.deleteMany({});
     await OrderModel.deleteMany({});
