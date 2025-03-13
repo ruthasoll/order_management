@@ -1,75 +1,66 @@
 import React, { useState } from "react";
 import { Button, Form, Input } from "antd";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 
-const UserSchema = z.object({
-  name: z.string().min(1, "Name is required"), // Name must not be empty
-  email: z.string().email("Invalid email address"), // Email validation
-  password: z.string().min(6, "Password must be at least 6 characters"), // Password validation
-  confirmPassword: z
-    .string()
-    .min(6, "Confirm password must match the password")
-    .refine((val, ctx) => val === ctx.parent.password, {
-      message: "Passwords must match",
-    }),
-  role: z.enum(["user", "admin"]).optional(), // Enum validation for role
-});
-
-const AuthForm = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(UserSchema),
-  });
-
-  const onSubmit = (data) => {
-    console.log("Form Data:", data);
-  };
-
+const AuthForm = ({ btnTitle, onSubmit, isLogin, children }) => {
   return (
-    <Form layout={"vertical"} onFinish={handleSubmit(onSubmit)}>
-      <Form.Item
-        label="Name"
-        validateStatus={errors.name && "error"}
-        help={errors.name?.message}
-      >
-        <Input placeholder="Enter your name" {...register("name")} />
-      </Form.Item>
+    <Form layout={"vertical"} onFinish={onSubmit}>
+      {!isLogin && (
+        <Form.Item
+          label="Name"
+          name={"name"}
+          rules={[
+            {
+              required: true,
+              message: "Please input your username!",
+            },
+          ]}
+        >
+          <Input placeholder="Enter your name" />
+        </Form.Item>
+      )}
       <Form.Item
         label="Email"
-        validateStatus={errors.email && "error"}
-        help={errors.email?.message}
+        name={"email"}
+        rules={[
+          {
+            required: true,
+            message: "Please input a valid email address !",
+          },
+        ]}
       >
-        <Input placeholder="Enter your email" {...register("email")} />
+        <Input placeholder="Enter your email" />
       </Form.Item>
       <Form.Item
         label="Password"
-        validateStatus={errors.password && "error"}
-        help={errors.password?.message}
+        name={"password"}
+        rules={[
+          {
+            required: true,
+            message: "Please input password!",
+          },
+        ]}
       >
-        <Input.Password
-          placeholder="Enter your password"
-          {...register("password")}
-        />
+        <Input.Password placeholder="Enter your password" />
       </Form.Item>
-      <Form.Item
-        label="Confirm Password"
-        validateStatus={errors.confirmPassword && "error"}
-        help={errors.confirmPassword?.message}
-      >
-        <Input.Password
-          placeholder="Confirm your password"
-          {...register("confirmPassword")}
-        />
-      </Form.Item>
+      {!isLogin && (
+        <Form.Item
+          label="Confirm Password"
+          name={"confirmPassword"}
+          rules={[
+            {
+              required: true,
+              message: "Please Confirm your password!",
+            },
+          ]}
+        >
+          <Input.Password placeholder="Confirm your password" />
+        </Form.Item>
+      )}
       <Form.Item>
         <Button type="primary" htmlType="submit">
-          Submit
+          {btnTitle}
         </Button>
+        {children}
       </Form.Item>
     </Form>
   );

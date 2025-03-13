@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { base_url } from "../../App";
 
 import { PlusCircleOutlined, EditOutlined } from "@ant-design/icons";
 import { Avatar, Card } from "antd";
@@ -22,7 +23,6 @@ const Products = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const base_url = "http://localhost:8000/api";
       try {
         const result = await axios.get(`${base_url}/products`);
         console.log("result", result);
