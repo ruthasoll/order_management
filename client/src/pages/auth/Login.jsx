@@ -18,9 +18,13 @@ const Login = () => {
     setLoading(true);
     try {
       const result = await axios.post(`${base_url}/auth/login`, values);
-      if (result.status === 200) {
+      console.log("result", result);
+      if (result.status == 200) {
+        console.log("is here");
+
         setSuccessMessage("Wellcome again");
-        localStorage.setItem("order-token", response.data.token);
+        localStorage.setItem("order-token", result.data.token);
+
         setTimeout(() => {
           navigate("/");
         }, 600);
