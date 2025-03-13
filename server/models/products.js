@@ -16,6 +16,10 @@ const ProductSchema =new Schema({
         required:true
     },
     productImage:String,
+    description:{
+        type:String,
+        required:true
+    },
     avaliableQnty:{type:Number,required:true},
 })
 
