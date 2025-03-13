@@ -1,5 +1,11 @@
 const express = require("express");
-const { createOrder, getOrder, getOrders, updateOrder, deleteOrder } = require("../controllers/orderController");
+const {
+  createOrder,
+  getOrder,
+  getOrders,
+  updateOrder,
+  deleteOrder,
+} = require("../controllers/orderController");
 const auth = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -11,4 +17,3 @@ router.get("/:id", auth(), getOrder);
 router.delete("/:id", auth(), deleteOrder);
 
 module.exports = router;
- 

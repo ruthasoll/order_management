@@ -1,58 +1,71 @@
-const { MongoClient } = require('mongodb');
-const OrderModel = require('../models/order');
-
-const uri = process.env.mongodb_url;
-const client = new MongoClient(uri);
-
+const OrderModel = require("../models/order");
+const UserModel = require("../models/users");
+const ProductModel = require("../models/products");
 
 const createOrder = async (req, res) => {
-    console.log('Received body:', req.body); 
-    const { orderNumber, name, price, availableQuantity, deliveryDate, user, items } = req.body;
-    if(!user){
-      return res.status(400).json({ message: 'Must Login to create an Order!'});
+  const { deliveryDate, items } = req.body;
+  const user = req.user;
+
+  if (!items || items.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "Order must contain at least one item" });
+  }
+
+  const order = { deliveryDate, items, user };
+  try {
+    const isUser = await UserModel.findOne({ id: user.id });
+    if (!isUser) {
+      return res.status(400).json({ message: "User not found" });
     }
-    if (!orderNumber || !name || !price || !availableQuantity || !deliveryDate) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-    const order = {deliveryDate, items, user};
-    try {
-      const isUser = await UserModel.findOne({ _id: user });
-      if(!isUser){
-        return res.status(400).json({ message: 'User not found' });
+    order.user = isUser;
+
+    const new_items = [];
+    for (const item of items) {
+      const product = await ProductModel.findOne({ id: item.product });
+      if (!product) {
+        return res
+          .status(400)
+          .json({ message: `Product with ID ${item.product} not found` });
       }
-      const result = await OrderModel.create(order);
-      return res.status(201).json({
-        message: 'Order created successfully',
-        result,
-      });
-    } catch (error) {
-      console.error('Error creating order:', error);
-      return res.status(500).json({ message: 'Error creating order' });
+      if (item.quantity > product.avaliableQnty) {
+        return res.status(400).json({
+          message: `Insufficient quantity for product ${product.name}`,
+        });
+      }
+      product.avaliableQnty -= item.quantity;
+      await product.save();
+      new_items.push({ product: product, quantity: item.quantity });
     }
-   
+    order.items = new_items;
+    const result = await OrderModel.create(order);
+    return res.status(201).json({
+      message: "Order created successfully",
+      result,
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return res.status(500).json({ message: "Error creating order" });
+  }
 };
 
-const getOrders = async (req, res)=>{
+const getOrders = async (req, res) => {
   try {
-    const orders = req.user.role === "admin"
-      ? await OrderModel.find().populate("user", "name email")
-      : await OrderModel.find({ user: req.user.id });
-
-     res.json(orders);
+    const orders = await OrderModel.find()
+      .populate("user", "name email")
+      .populate("items.product", "name price");
+    res.json(orders);
   } catch (error) {
+    console.log(`error`, error);
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const getOrder = async (req, res) => {
   try {
-    const { role, id: userId } = req.user; 
-    let order;
-    if (role === "admin") {
-      order = await OrderModel.findOne({ id: req.params.id });
-    } else {
-      order = await OrderModel.findOne({ id: req.params.id, user:userId });
-    }
+    const order = await OrderModel.findOne({ id: req.params.id })
+      .populate("user", "name email")
+      .populate("items.product", "name price");
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (error) {
@@ -60,85 +73,66 @@ const getOrder = async (req, res) => {
   }
 };
 
-
 const updateOrder = async (req, res) => {
   try {
-    const { status, ...details } = req.body; 
-    const { role, id: userId } = req.user;  // Assume `req.user` contains user's role and ID
+    const { status, ...details } = req.body;
     const orderId = req.params.id;
 
-
-    const order = await OrderModel.findById(orderId);
+    const order = await OrderModel.findOne({ id: orderId }).populate(
+      "items.product"
+    );
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    const isOwner = order.user.toString() === userId;
 
-    if (role === "admin") {
-      if (isOwner) {
-        const updatedOrder = await OrderModel.findByIdAndUpdate(
-          orderId,
-          { status, ...details },
-          { new: true }
-        );
-        return res.json(updatedOrder);
-      } else {
-        if (status) {
-          const updatedOrder = await OrderModel.findByIdAndUpdate(
-            orderId,
-            { status },
-            { new: true }
-          );
-          return res.json(updatedOrder);
-        } else {
-          return res.status(403).json({ message: "Admins can only update status for non-owned orders" });
-        }
-      }
-    } else {
-      if (isOwner) {
-        const updatedOrder = await OrderModel.findByIdAndUpdate(
-          orderId,
-          { ...details },
-          { new: true }
-        );
-        return res.json(updatedOrder);
-      } else {
-        return res.status(403).json({ message: "You are not authorized to update this order" });
+    if (status && status === "canceled" && order.status !== "canceled") {
+      for (const item of order.items) {
+        const product = await ProductModel.findById(item.product);
+        product.avaliableQnty += item.quantity;
+        await product.save();
       }
     }
+    const updatedOrder = await OrderModel.findOneAndUpdate(
+      { id: orderId },
+      { status, ...details },
+      { new: true }
+    );
+    return res.json(updatedOrder);
   } catch (error) {
+    console.log(`error`, error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 const deleteOrder = async (req, res) => {
-    try {
-      const orderId = req.params.id;
-      const { role, id: userId } = req.user;
-      const order = await OrderModel.findById(orderId);
+  try {
+    const orderId = req.params.id;
+    const order = await OrderModel.findOne({ id: orderId });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    const isOwner = order.user.toString() === userId;
 
-    if(!isOwner){
-      return res.status(403).json({ message: "You are not authorized to delete this order" });
+    for (const item of order.items) {
+      const product = await ProductModel.findById(item.product);
+      product.avaliableQnty += item.quantity;
+      await product.save();
     }
-      const Order = await OrderModel.findByIdAndDelete(orderId);
-      if (!Order) return res.status(404).json({ message: "Order not found" });
-      res.json(Order);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  };
 
+    const deletedOrder = await OrderModel.findOneAndDelete({ id: orderId });
+    if (!deletedOrder)
+      return res.status(404).json({ message: "Order not found" });
+    res.json(deletedOrder);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 module.exports = {
-    createOrder,
-    getOrders,
-    getOrder,
-    updateOrder,
-    deleteOrder
+  createOrder,
+  getOrders,
+  getOrder,
+  updateOrder,
+  deleteOrder,
 };
