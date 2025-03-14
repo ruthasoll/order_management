@@ -9,11 +9,12 @@ import {
 } from "@ant-design/icons";
 
 const Navbar = () => {
-  const token = localStorage.getItem("order-token");
+  let token = localStorage.getItem("order-token");
 
   const handleLogout = () => {
     localStorage.removeItem("order-token");
-   window.location.href = '/login'
+    token = null;
+    window.location.href = '/login';
   };
 
   return (

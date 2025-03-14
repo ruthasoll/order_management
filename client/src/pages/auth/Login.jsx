@@ -60,12 +60,23 @@ const Login = () => {
           btnTitle={loading ? <Spin size="small" /> : "Login"}
           isLogin={true}
           onSubmit={onFinish}
+
         >
           <p className="text-sm mt-3">
             No account?{" "}
             <NavLink className="font-bold text-blue-700" to={"/signup"}>
               Signup
             </NavLink>
+          </p>
+          <p>
+            {errorMessage && (
+              <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+            )}
+          </p>
+          <p>
+            {successMessage && (
+              <p className="text-green-600 text-sm mt-3">{successMessage}</p>
+            )}
           </p>
         </AuthForm>
       </div>
