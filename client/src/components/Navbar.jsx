@@ -13,7 +13,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("order-token");
-    Navigate("/login");
+   window.location.href = '/login'
   };
 
   return (

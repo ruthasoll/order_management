@@ -6,7 +6,27 @@ import ProductCard from "./ProductCard";
 import CreateProductModal from "./CreateProductModal";
 import { base_url } from "../../App";
 
+
+
+
 const Products = () => {
+  useEffect(() => {
+    const token = localStorage.getItem("order-token");
+
+    // Function to check if the token is expired
+    const isTokenExpired = (token) => {
+        if (!token) return true; // No token means expired
+        const payload = JSON.parse(atob(token.split('.')[1])); // Decode the JWT
+        const expirationTime = payload.exp * 1000; // Convert to milliseconds
+        return Date.now() > expirationTime; // Check if current time is past expiration
+    };
+
+    if (isTokenExpired(token)) {
+        // Redirect to sign-in if the token is expired or nonexistent
+        window.location.href = '/login';
+    }
+}, []);
+
   const [products, setProducts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateProductModalOpen, setIsCreateProductModalOpen] =
