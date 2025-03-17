@@ -54,7 +54,7 @@ const Login = () => {
     }
   };
   return (
-    <div className="min-w-full flex p-6 items-center justify-center">
+    <div className="min-w-full flex py-30 items-center justify-center">
       <div className="shadow-lg rounded-sm p-6 max-w-[400px] w-[90%]">
         <AuthForm
           btnTitle={loading ? <Spin size="small" /> : "Login"}
